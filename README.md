@@ -39,7 +39,7 @@ SQL query. Steps stream to the UI live as an "agent activity" trace.
 
 ```bash
 # 1. Clone
-git clone https://github.com/ahassan_sfemu/headlessVsLlm.git
+git clone https://github.com/zezopdx/headlessVsLlm.git
 cd headlessVsLlm
 
 # 2. Create a virtual environment (Python 3.12)
