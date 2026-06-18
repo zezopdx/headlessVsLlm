@@ -52,6 +52,26 @@ def _mcp_command() -> tuple[str, list[str]]:
     return "uvx", ["snowflake-labs-mcp", "--service-config-file", config]
 
 
+def _anthropic_client_and_model() -> tuple[anthropic.AsyncAnthropic, str]:
+    """
+    Prefer Heroku Managed Inference (enterprise-billed, no personal token) when the
+    INFERENCE_* config vars are present; otherwise fall back to a direct Anthropic API
+    key for local dev. Heroku's Claude endpoint speaks the native Anthropic Messages
+    API, so the agent loop is unchanged — we only swap the base URL + auth.
+    """
+    inference_key = os.environ.get("INFERENCE_KEY")
+    inference_url = os.environ.get("INFERENCE_URL")
+    if inference_key and inference_url:
+        model = os.environ.get("INFERENCE_MODEL_ID", "claude-4-5-sonnet")
+        client = anthropic.AsyncAnthropic(auth_token=inference_key, base_url=inference_url)
+        log.info("LLM: Heroku Managed Inference (%s) via %s", model, inference_url)
+        return client, model
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+    client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    log.info("LLM: direct Anthropic API (%s)", model)
+    return client, model
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _ensure_private_key_file()
@@ -70,9 +90,9 @@ async def lifespan(app: FastAPI):
             log.info("MCP session ready")
             app.state.session = session
             app.state.system_prompt = SYSTEM_PROMPT_FILE.read_text()
-            app.state.anthropic = anthropic.AsyncAnthropic(
-                api_key=os.environ["ANTHROPIC_API_KEY"]
-            )
+            client, model = _anthropic_client_and_model()
+            app.state.anthropic = client
+            app.state.model = model
             yield
     log.info("MCP session closed")
 
@@ -98,7 +118,7 @@ async def chat(req: ChatRequest):
     if not req.messages:
         raise HTTPException(status_code=400, detail="messages cannot be empty")
 
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+    model = app.state.model
 
     # Browser may send a session-only edited prompt; fall back to the disk default.
     system_prompt = (req.system_prompt or "").strip() or app.state.system_prompt
