@@ -89,14 +89,35 @@ cp .env.example .env
 | `SNOWFLAKE_WAREHOUSE` | Warehouse to run queries |
 | `SNOWFLAKE_ROLE` | Role to assume |
 
-The `INFERENCE_*` values come from a Heroku Managed Inference model resource (see Deploy
-below). For local dev, pull them from the Heroku app:
+#### Heroku Managed Inference (the LLM)
+
+The app calls Claude through **Heroku Managed Inference** — enterprise-billed to the Heroku
+account, so no personal Anthropic token is used. The `INFERENCE_*` values are produced when
+you provision a model resource, and they live in two places:
+
+- **On the Heroku app — set automatically.** Provisioning the add-on injects
+  `INFERENCE_KEY`, `INFERENCE_URL`, and `INFERENCE_MODEL_ID` into the app's config vars.
+  You don't fetch or set them by hand:
 
 ```bash
-heroku config:get INFERENCE_KEY -a <your-app>
-heroku config:get INFERENCE_URL -a <your-app>
+heroku plugins:install @heroku/plugin-ai
+# provision a model; --as INFERENCE controls the INFERENCE_* var prefix
+heroku ai:models:create claude-4-5-sonnet -a <your-app> --as INFERENCE
+heroku config -a <your-app> | grep INFERENCE   # verify they landed
+```
+
+- **In local `.env` — fetched via the authenticated Heroku CLI.** With the CLI logged in,
+  pull the same values by **app name** and drop them into `.env`:
+
+```bash
+heroku config:get INFERENCE_KEY      -a <your-app>
+heroku config:get INFERENCE_URL      -a <your-app>
 heroku config:get INFERENCE_MODEL_ID -a <your-app>
 ```
+
+> You reference the **app** (`-a <your-app>`) plus the var names to fetch the keys — not the
+> generated resource name (e.g. `inference-clear-42517`). That resource name is only needed
+> for `heroku ai:models:info` or detaching/destroying the model.
 
 The set of tables the agent is told about lives in [`system_prompt.txt`](./system_prompt.txt);
 the MCP server is restricted to read-only SQL via
