@@ -1,7 +1,7 @@
-fastapi
-uvicorn[standard]
-anthropic
-mcp
-snowflake-labs-mcp
-fastmcp<3  # snowflake-labs-mcp depends on fastmcp 2.x; 3.0 will break until upgraded
-python-dotenv
+fastapi==0.137.1
+uvicorn[standard]==0.49.0
+anthropic==0.109.2
+mcp==1.28.0
+snowflake-labs-mcp==1.4.2
+fastmcp==2.14.7
+python-dotenv==1.2.2
