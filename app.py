@@ -54,21 +54,20 @@ def _mcp_command() -> tuple[str, list[str]]:
 
 def _anthropic_client_and_model() -> tuple[anthropic.AsyncAnthropic, str]:
     """
-    Prefer Heroku Managed Inference (enterprise-billed, no personal token) when the
-    INFERENCE_* config vars are present; otherwise fall back to a direct Anthropic API
-    key for local dev. Heroku's Claude endpoint speaks the native Anthropic Messages
-    API, so the agent loop is unchanged — we only swap the base URL + auth.
+    Use Heroku Managed Inference (enterprise-billed, no personal token). Both local dev
+    and Heroku read the same INFERENCE_* vars — locally they're pulled from the Heroku
+    app via `heroku config:get`. Heroku's Claude endpoint speaks the native Anthropic
+    Messages API, so the agent loop is unchanged — we only swap the base URL + auth.
     """
     inference_key = os.environ.get("INFERENCE_KEY")
     inference_url = os.environ.get("INFERENCE_URL")
-    if inference_key and inference_url:
-        model = os.environ.get("INFERENCE_MODEL_ID", "claude-4-5-sonnet")
-        client = anthropic.AsyncAnthropic(auth_token=inference_key, base_url=inference_url)
-        log.info("LLM: Heroku Managed Inference (%s) via %s", model, inference_url)
-        return client, model
-    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
-    client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    log.info("LLM: direct Anthropic API (%s)", model)
+    if not (inference_key and inference_url):
+        raise RuntimeError(
+            "Missing Heroku Managed Inference config. Set INFERENCE_KEY and INFERENCE_URL."
+        )
+    model = os.environ.get("INFERENCE_MODEL_ID", "claude-4-5-sonnet")
+    client = anthropic.AsyncAnthropic(auth_token=inference_key, base_url=inference_url)
+    log.info("LLM: Heroku Managed Inference (%s) via %s", model, inference_url)
     return client, model
 
 

@@ -33,7 +33,7 @@ graph LR
         AGENT[agent.py<br/>tool-use loop]
         MCP[Snowflake MCP server<br/>stdio subprocess]
     end
-    ANTH[Anthropic API<br/>Claude]
+    ANTH[Heroku Managed Inference<br/>Claude / Anthropic Messages API]
     SNOW[(Snowflake)]
 
     UI -- "POST /api/chat (NDJSON stream)" --> API
@@ -56,7 +56,7 @@ graph LR
 | **MCP server** | `snowflake-labs-mcp` (subprocess) | Exposes a read-only SQL tool; talks to Snowflake |
 | **MCP config** | `services/configuration.yaml` | Restricts the MCP server to `SELECT` + `DESCRIBE` only |
 | **Agent instructions** | `system_prompt.txt` | Persona, table guide, query/self-correction rules |
-| **LLM** | Anthropic API (Claude) | Decides what SQL to run, interprets results, writes the answer |
+| **LLM** | Heroku Managed Inference (Claude, native Anthropic Messages API) | Decides what SQL to run, interprets results, writes the answer |
 | **Data** | Snowflake | Customer financial + CRM data (Salesforce Data Cloud datashare) |
 
 ---
@@ -200,7 +200,7 @@ graph LR
     Dev -- git push heroku --> H[Heroku build<br/>Heroku-24 · Python 3.12]
     H --> Dyno[web dyno<br/>uvicorn app:app]
     subgraph "Heroku config vars"
-        CV[ANTHROPIC_* · SNOWFLAKE_* · SNOWFLAKE_PRIVATE_KEY_B64]
+        CV[INFERENCE_* · SNOWFLAKE_* · SNOWFLAKE_PRIVATE_KEY_B64]
     end
     CV -.-> Dyno
 ```

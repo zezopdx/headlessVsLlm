@@ -79,14 +79,24 @@ cp .env.example .env
 
 | Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `ANTHROPIC_MODEL` | Model id (default `claude-sonnet-4-5-20250929`) |
+| `INFERENCE_KEY` | Heroku Managed Inference API key (enterprise-billed; no personal token) |
+| `INFERENCE_URL` | Heroku inference base URL (e.g. `https://us.inference.heroku.com`) |
+| `INFERENCE_MODEL_ID` | Provisioned model id (e.g. `claude-4-5-sonnet`) |
 | `SNOWFLAKE_ACCOUNT` | Account identifier (e.g. `ORG-ACCOUNT`) |
 | `SNOWFLAKE_USER` | Snowflake username |
 | `SNOWFLAKE_PRIVATE_KEY_FILE` | **Local:** path to the `.p8` file |
 | `SNOWFLAKE_PRIVATE_KEY_B64` | **Heroku:** base64 of the `.p8` contents (leave blank locally) |
 | `SNOWFLAKE_WAREHOUSE` | Warehouse to run queries |
 | `SNOWFLAKE_ROLE` | Role to assume |
+
+The `INFERENCE_*` values come from a Heroku Managed Inference model resource (see Deploy
+below). For local dev, pull them from the Heroku app:
+
+```bash
+heroku config:get INFERENCE_KEY -a <your-app>
+heroku config:get INFERENCE_URL -a <your-app>
+heroku config:get INFERENCE_MODEL_ID -a <your-app>
+```
 
 The set of tables the agent is told about lives in [`system_prompt.txt`](./system_prompt.txt);
 the MCP server is restricted to read-only SQL via
@@ -113,10 +123,13 @@ The app is Heroku-ready (`Procfile`, `.python-version`, b64 key handling in `app
 heroku login
 heroku create <unique-app-name>
 
-# config vars (values from your .env)
+# LLM: provision Heroku Managed Inference (sets INFERENCE_KEY / INFERENCE_URL /
+# INFERENCE_MODEL_ID automatically — enterprise-billed, no personal token)
+heroku plugins:install @heroku/plugin-ai
+heroku ai:models:create claude-4-5-sonnet -a <unique-app-name> --as INFERENCE
+
+# Snowflake config vars
 heroku config:set \
-  ANTHROPIC_API_KEY="..." \
-  ANTHROPIC_MODEL="claude-sonnet-4-5-20250929" \
   SNOWFLAKE_ACCOUNT="..." \
   SNOWFLAKE_USER="..." \
   SNOWFLAKE_WAREHOUSE="..." \
@@ -124,6 +137,9 @@ heroku config:set \
 
 # private key: base64-encode the .p8 inline (do NOT set SNOWFLAKE_PRIVATE_KEY_FILE on Heroku)
 heroku config:set SNOWFLAKE_PRIVATE_KEY_B64="$(base64 -i snowflake_rsa_key.p8)"
+
+# single worker so only one MCP subprocess spawns (avoids R14 on a 512 MB dyno)
+heroku config:set WEB_CONCURRENCY=1
 
 git push heroku main
 heroku logs --tail   # look for "MCP session ready"

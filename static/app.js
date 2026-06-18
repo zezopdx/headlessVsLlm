@@ -56,7 +56,8 @@ const activityStatusEl = document.getElementById('activity-status');
 function calcCost(inputTokens, outputTokens) {
   const pIn  = parseFloat(priceInputEl.value)  || 0;
   const pOut = parseFloat(priceOutputEl.value) || 0;
-  return (inputTokens / 1000) * pIn + (outputTokens / 1000) * pOut;
+  // prices are per 1M tokens
+  return (inputTokens / 1e6) * pIn + (outputTokens / 1e6) * pOut;
 }
 
 const fmt = n => (typeof n === 'number' ? n.toLocaleString() : n);
