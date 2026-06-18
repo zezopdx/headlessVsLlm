@@ -3,4 +3,5 @@ uvicorn[standard]
 anthropic
 mcp
 snowflake-labs-mcp
+fastmcp<3  # snowflake-labs-mcp depends on fastmcp 2.x; 3.0 will break until upgraded
 python-dotenv
