@@ -205,7 +205,15 @@ graph LR
     CV -.-> Dyno
 ```
 
-- **Procfile:** `web: uvicorn app:app --host 0.0.0.0 --port $PORT`
+- **Procfile:** `web: uvicorn app:app --host 0.0.0.0 --port $PORT --workers 1`
+  - **`--workers 1` is required, not incidental.** Each uvicorn worker runs its own copy
+    of the app, and each app instance spawns its **own** Snowflake MCP subprocess at
+    startup. Heroku's Python buildpack defaults `WEB_CONCURRENCY` to 2 on a 512 MB dyno, so
+    without this flag you get 2 workers → 2 MCP servers → 2 Snowflake connections, which
+    both exceeds the memory quota (`Error R14`) and breaks the single-warm-session model.
+    Pinning to one worker keeps memory in budget and preserves the single-session design
+    (§8 concurrency note). A `WEB_CONCURRENCY=1` config var is also set on the deployed app
+    as belt-and-suspenders.
 - **Runtime:** Python 3.12 (`.python-version`), pinned deps (`requirements.txt`).
 - **Local vs Heroku key handling:** `_ensure_private_key_file()` bridges the gap — file
   path locally, decoded temp file from a config var on Heroku's ephemeral filesystem.
