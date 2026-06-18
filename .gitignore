@@ -1,0 +1,7 @@
+.env
+snowflake_rsa_key.p8
+snowflake_rsa_key.pub
+logs/
+__pycache__/
+*.pyc
+.venv/

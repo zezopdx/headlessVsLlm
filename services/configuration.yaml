@@ -1,0 +1,32 @@
+# Snowflake MCP service config — read-only for the demo.
+# Only the SQL query tool is exposed. We allow SELECT + DESCRIBE so the
+# model can inspect table schemas safely before querying.
+
+agent_services: []
+search_services: []
+analyst_services: []
+
+other_services:
+  object_manager: false   # no create/drop/alter object tooling
+  query_manager: true     # the SQL execution tool (the one we want)
+  semantic_manager: false # no semantic-view tooling
+
+sql_statement_permissions:
+  - Select: true
+  - Alter: false
+  - Command: false        # blocks SHOW/CALL/GRANT etc.
+  - Comment: false
+  - Commit: false
+  - Copy: false
+  - Create: false
+  - Delete: false
+  - Describe: true
+  - Drop: false
+  - Insert: false
+  - Merge: false
+  - Rollback: false
+  - Transaction: false
+  - TruncateTable: false
+  - Update: false
+  - Use: false
+  - Unknown: false        # block anything unmapped

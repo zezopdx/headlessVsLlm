@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM + Snowflake MCP — Cumulus Bank</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- ── Left: Conversation ── -->
+    <div class="conversation-panel">
+      <header class="panel-header">
+        <div class="header-title">
+          <h1>LLM (Claude) + Data Warehouse MCP (Snowflake)</h1>
+          <span class="arch-badge">mcp</span>
+        </div>
+        <span class="model-label" id="model-label">claude-sonnet-4-5</span>
+      </header>
+
+      <div class="messages" id="messages">
+        <div class="empty-state">
+          Ask a question about a customer to get started.
+        </div>
+      </div>
+
+      <!-- Agent activity (live train of thought) -->
+      <div class="activity collapsed" id="activity">
+        <button class="activity-header" id="activity-toggle" type="button">
+          <span class="activity-title">
+            <span class="activity-dot" id="activity-dot"></span>
+            Agent activity
+          </span>
+          <span class="activity-status" id="activity-status">idle</span>
+          <span class="activity-chevron">⌄</span>
+        </button>
+        <div class="activity-body" id="activity-body">
+          <div class="activity-empty">Step-by-step activity will appear here while the agent works.</div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <textarea
+          id="prompt-input"
+          placeholder="e.g. Give me a full profile on Julie Morris — accounts, recent transactions, open cases, opportunities."
+          rows="3"
+        ></textarea>
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+
+    <!-- ── Right: Metrics ── -->
+    <div class="metrics-panel">
+      <div class="panel-tabs">
+        <button class="panel-tab active" id="tab-btn-metrics" type="button">Metrics</button>
+        <button class="panel-tab" id="tab-btn-prompts" type="button">Prompts</button>
+        <button class="panel-tab" id="tab-btn-system" type="button">System</button>
+      </div>
+
+      <!-- ── Metrics tab ── -->
+      <div class="tab-content" id="tab-metrics">
+        <div class="metrics-header">
+          <h2>Session metrics</h2>
+          <button id="clear-btn">Clear chat</button>
+        </div>
+
+        <!-- Pricing -->
+        <div class="metric-section">
+          <h3>Pricing ($ / 1K tokens)</h3>
+          <div class="price-row">
+            <label for="price-input">Input</label>
+            <input type="number" id="price-input" value="0.003" min="0" step="0.001">
+          </div>
+          <div class="price-row">
+            <label for="price-output">Output</label>
+            <input type="number" id="price-output" value="0.015" min="0" step="0.001">
+          </div>
+        </div>
+
+        <!-- Session totals -->
+        <div class="metric-section">
+          <h3>Session Totals</h3>
+          <div class="metric-row">
+            <span>Turns</span>
+            <span id="total-turns">0</span>
+          </div>
+          <div class="metric-row">
+            <span>Input tokens</span>
+            <span id="total-input-tokens">0</span>
+          </div>
+          <div class="metric-row">
+            <span>Output tokens</span>
+            <span id="total-output-tokens">0</span>
+          </div>
+          <div class="metric-row highlight">
+            <span>Est. LLM cost</span>
+            <span id="total-cost">$0.0000</span>
+          </div>
+        </div>
+
+        <!-- Last turn -->
+        <div class="metric-section">
+          <h3>Last Turn</h3>
+          <div class="metric-row">
+            <span>Latency</span>
+            <span id="last-latency">—</span>
+          </div>
+          <div class="metric-row">
+            <span>Input tokens</span>
+            <span id="last-input-tokens">—</span>
+          </div>
+          <div class="metric-row">
+            <span>Output tokens</span>
+            <span id="last-output-tokens">—</span>
+          </div>
+          <div class="metric-row">
+            <span>Snowflake queries</span>
+            <span id="last-sf-queries">—</span>
+          </div>
+        </div>
+
+        <div class="sf-note">
+          💡 Snowflake compute costs are not shown here.<br>
+          Open <strong>Snowsight → Query History</strong> in a separate tab to see per-query execution and credit usage.
+        </div>
+      </div>
+
+      <!-- ── Prompts tab ── -->
+      <div class="tab-content hidden" id="tab-prompts">
+        <div class="metrics-header">
+          <h2>Demo prompts</h2>
+        </div>
+        <p class="prompts-hint">Click any prompt to load it into the input, or use Copy.</p>
+        <div id="prompts-list"></div>
+      </div>
+
+      <!-- ── System prompt tab ── -->
+      <div class="tab-content hidden" id="tab-system">
+        <div class="metrics-header">
+          <h2>System prompt</h2>
+        </div>
+        <p class="prompts-hint">
+          The instructions that govern the agent. Edit freely — changes apply to your next
+          turn. Edits are session-only and reset to the default on refresh.
+        </p>
+        <textarea id="system-prompt-text" class="system-prompt-text" spellcheck="false"></textarea>
+        <div class="system-prompt-actions">
+          <button id="system-prompt-reset" class="prompt-btn" type="button">Reset to default</button>
+          <span id="system-prompt-status" class="system-prompt-status"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
